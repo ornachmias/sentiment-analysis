@@ -10,5 +10,4 @@ num_epochs = 20
 batch_size = 128
 
 # Architecture
-num_features = 784
 num_classes = 3

@@ -9,7 +9,9 @@ import csv
 
 
 class T4saDataset(Dataset):
-    def __init__(self, train, configs, limit=None):
+    def __init__(self, train, configs, limit=None, load_image=False):
+        self._image_size = configs.image_size
+        self._load_image = load_image
         self._images_directory = configs.images_directory
         if not os.path.exists(self._images_directory):
             raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), self._images_directory)
@@ -35,7 +37,7 @@ class T4saDataset(Dataset):
         return self._samples.get_samples_size()
 
     def __getitem__(self, idx):
-        return self._samples.get_sample(idx)
+        return self._samples.get_sample(idx, self._load_image, self._image_size)
 
     def _load_samples(self, limit):
         image_id_to_text = self._load_descriptors()

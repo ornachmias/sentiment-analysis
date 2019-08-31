@@ -8,11 +8,13 @@ from image_sentiment.vgg19 import settings
 def compute_accuracy(model, data_loader):
     model.eval()
     correct_pred, num_examples = 0, 0
-    for i, (features, targets) in enumerate(data_loader):
-        features = features.to(settings.DEVICE)
+    for i, features in enumerate(data_loader):
+        images = features["image"]
+        targets = features["classification"]
+        images = images.to(settings.DEVICE)
         targets = targets.to(settings.DEVICE)
 
-        logits, probas = model(features)
+        logits, probas = model(images)
         _, predicted_labels = torch.max(probas, 1)
         num_examples += targets.size(0)
         correct_pred += (predicted_labels == targets).sum()
@@ -23,10 +25,12 @@ def compute_epoch_loss(model, data_loader):
     model.eval()
     curr_loss, num_examples = 0., 0
     with torch.no_grad():
-        for features, targets in data_loader:
-            features = features.to(settings.DEVICE)
+        for features in data_loader:
+            images = features["image"]
+            targets = features["classification"]
+            images = images.to(settings.DEVICE)
             targets = targets.to(settings.DEVICE)
-            logits, probas = model(features)
+            logits, probas = model(images)
             loss = F.cross_entropy(logits, targets, reduction='sum')
             num_examples += targets.size(0)
             curr_loss += loss
@@ -40,13 +44,14 @@ def run(model, train_loader, optimizer):
     for epoch in range(settings.num_epochs):
 
         model.train()
-        for batch_idx, (features, targets) in enumerate(train_loader):
-            features = [f["image"] for f in features]
-            features = features.to(settings.DEVICE)
+        for batch_idx, features in enumerate(train_loader):
+            images = features["image"]
+            targets = features["classification"]
+            images = images.to(settings.DEVICE)
             targets = targets.to(settings.DEVICE)
 
             # FORWARD AND BACK PROP
-            logits, probas = model(features)
+            logits, probas = model(images)
             cost = F.cross_entropy(logits, targets)
             optimizer.zero_grad()
 
