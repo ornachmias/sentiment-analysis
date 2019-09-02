@@ -14,7 +14,7 @@ class T4saDataset(Dataset):
         self._load_image = load_image
         self._images_directory = configs.images_directory
         if not os.path.exists(self._images_directory):
-            raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), self._images_directory)
+            raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), os.path.realpath(self._images_directory))
 
         self._images_classification_file = ""
 
