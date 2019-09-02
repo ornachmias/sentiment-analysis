@@ -36,5 +36,5 @@ class Vocab:
         processed_texts = [preprocess_string(text) for text in texts]
         encoded_texts = []
         for text in processed_texts:
-            encoded_texts.append([self.vocab[w] for w in text])
+            encoded_texts.append([self.vocab.get(w, 0) for w in text])
         return self._pad_features(encoded_texts, seq_length)

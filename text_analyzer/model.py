@@ -1,78 +1,45 @@
-import torch.nn as nn
-
-# https://towardsdatascience.com/sentiment-analysis-using-lstm-step-by-step-50d074f09948
-
-train_on_gpu = False
+import torch
+from torch import nn
 
 
-class SentimentLSTM(nn.Module):
-    """
-    The RNN model that will be used to perform Sentiment analysis.
-    """
-
-    def __init__(self, vocab_size, output_size, embedding_dim, hidden_dim, n_layers, drop_prob=0.5):
-        """
-        Initialize the model by setting up the layers.
-        """
-        super().__init__()
-
-        self.output_size = output_size
-        self.n_layers = n_layers
+class LSTMModel(nn.Module):
+    def __init__(self, vocab_size, embedding_dim, hidden_dim, layer_dim, output_dim, batch_size):
+        super(LSTMModel, self).__init__()
+        # Hidden dimensions
         self.hidden_dim = hidden_dim
 
-        # embedding and LSTM layers
-        self.embedding = nn.Embedding(vocab_size, embedding_dim)
-        self.lstm = nn.LSTM(embedding_dim, hidden_dim, n_layers,
-                            dropout=drop_prob, batch_first=True)
+        # Number of hidden layers
+        self.layer_dim = layer_dim
 
+        self.word_embeddings = nn.Embedding(vocab_size, embedding_dim)
 
-        # linear and sigmoid layers
+        # Building your LSTM
+        # batch_first=True causes input/output tensors to be of shape
+        # (batch_dim, seq_dim, feature_dim)
+        self.lstm = nn.LSTM(embedding_dim, hidden_dim, layer_dim, batch_first=True)
 
-        self.fc = nn.Linear(hidden_dim, output_size)
+        # Readout layer
+        self.fc = nn.Linear(hidden_dim, output_dim)
 
-        self.soft_max = nn.Softmax()
+        self.soft_max = nn.Softmax(dim=1)
 
-    def forward(self, x, hidden):
-        """
-        Perform a forward pass of our model on some input and hidden state.
-        """
-        batch_size = x.size(0)
+        # Initialize hidden state with zeros
+        self._lstm_hidden_state = torch.zeros(self.layer_dim, batch_size, self.hidden_dim).requires_grad_()
+        # Initialize cell state
+        self._lstm_cell_state = torch.zeros(self.layer_dim, batch_size, self.hidden_dim).requires_grad_()
 
-        # embeddings and lstm_out
-        embeds = self.embedding(x)
-        lstm_out, hidden = self.lstm(embeds, hidden)
+    def forward(self, x):
+        embeddings = self.word_embeddings(x)
+        # We need to detach as we are doing truncated backpropagation through time (BPTT)
+        # If we don't, we'll backprop all the way to the start even after going through another batch
 
-        last_hidden_layer = hidden[-1]
+        out, (hn, cn) = self.lstm(embeddings, (self._lstm_hidden_state.detach(), self._lstm_cell_state.detach()))
+        self._lstm_hidden_state = hn
+        self._lstm_cell_state = cn
 
-        # stack up lstm outputs
-        # lstm_out = lstm_out.contiguous().view(-1, self.hidden_dim)
+        # Index hidden state of last time step
+        # out[:, -1, :] --> 100, 100 --> just want last time step hidden states!
+        out = self.fc(out[:, -1, :])
 
-        # dropout and fully-connected layer
-        # out = self.dropout(lstm_out)
-        # out = self.fc(out)
-        # sigmoid function
-        # sig_out = self.sig(out)
-
-        fc_out = self.fc(last_hidden_layer)
-        softmax_out = self.soft_max(fc_out)
-        # reshape to be batch_size first
-        # sig_out = sig_out.view(batch_size, -1)
-        # sig_out = sig_out[:, -1]  # get last batch of labels
-
-        # return last sigmoid output and hidden state
-        return softmax_out, hidden
-
-    def init_hidden(self, batch_size):
-        ''' Initializes hidden state '''
-        # Create two new tensors with sizes n_layers x batch_size x hidden_dim,
-        # initialized to zero, for hidden state and cell state of LSTM
-        weight = next(self.parameters()).data
-
-        if (train_on_gpu):
-            hidden = (weight.new(self.n_layers, batch_size, self.hidden_dim).zero_().cuda(),
-                      weight.new(self.n_layers, batch_size, self.hidden_dim).zero_().cuda())
-        else:
-            hidden = (weight.new(self.n_layers, batch_size, self.hidden_dim).zero_(),
-                      weight.new(self.n_layers, batch_size, self.hidden_dim).zero_())
-
-        return hidden
+        soft_max = self.soft_max(out)
+        return soft_max

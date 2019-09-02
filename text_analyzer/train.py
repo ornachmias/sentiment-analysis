@@ -1,5 +1,4 @@
 import os
-from collections import Counter
 
 import numpy as np
 import pickle
@@ -9,8 +8,10 @@ from torch.utils.data.dataloader import DataLoader
 
 import configurations
 from t4sa.t4sa_dataset import T4saDataset
-from text_analyzer.model import SentimentLSTM, train_on_gpu
+from text_analyzer.model import LSTMModel
 from text_analyzer.vocab import Vocab
+
+train_on_gpu = False
 
 
 def get_vocabulary(refresh=False):
@@ -29,30 +30,36 @@ def get_vocabulary(refresh=False):
     return vocab
 
 
+def indices_to_one_hot(data, nb_classes):
+    """Convert an iterable of indices to one-hot encoded labels."""
+    targets = np.array(data).reshape(-1)
+    return np.eye(nb_classes)[targets]
+
+
 def train2(vocab=None):
     if vocab is None:
         vocab = get_vocabulary()
 
-    batch_size = 50
+    batch_size = 100
 
-    train_dataset = T4saDataset(train=True, configs=configurations, load_image=False, limit=1000)
-    test_dataset = T4saDataset(train=False, configs=configurations, load_image=False, limit=1000)
+    train_dataset = T4saDataset(train=True, configs=configurations, load_image=False, limit=5000)
+    test_dataset = T4saDataset(train=False, configs=configurations, load_image=False, limit=100)
     train_loader = DataLoader(dataset=train_dataset,
                               batch_size=batch_size,
                               shuffle=True)
 
-    test_loader = DataLoader(dataset=train_dataset,
+    test_loader = DataLoader(dataset=test_dataset,
                              batch_size=batch_size,
                              shuffle=False)
 
     output_size = 3
-    embedding_dim = 200
-    seq_length = 200
-    hidden_dim = 256
-    n_layers = 2
+    embedding_dim = 100
+    seq_length = 150
+    hidden_dim = 128
+    layer_dim = 1
     vocab_size = len(vocab.vocab) + 1  # +1 for the 0 padding
-    net = SentimentLSTM(vocab_size, output_size, embedding_dim, hidden_dim, n_layers)
-    print(net)
+    net = LSTMModel(vocab_size, embedding_dim, hidden_dim, layer_dim, output_size, batch_size)
+
     # loss and optimization functions
     lr = 0.001
 
@@ -75,35 +82,24 @@ def train2(vocab=None):
     # train for some number of epochs
     for e in range(epochs):
         # initialize hidden state
-        h = net.init_hidden(batch_size)
 
         # batch loop
         for data in train_loader:
+            optimizer.zero_grad()
+
             counter += 1
             inputs, labels = data["description"], data["classification"]
+            labels = torch.from_numpy(indices_to_one_hot(labels, output_size))
+            labels = torch.tensor(labels, dtype=torch.float)
             inputs = torch.from_numpy(vocab.encode(data["description"], seq_length))
 
             if (train_on_gpu):
                 inputs, labels = inputs.cuda(), labels.cuda()
 
-            # Creating new variables for the hidden state, otherwise
-            # we'd backprop through the entire training history
-            h = tuple([each.data for each in h])
-
             # zero accumulated gradients
             net.zero_grad()
-
-            # get the output from the model
-            #            inputs = inputs.type(torch.LongTensor)
-
-            output, h = net.forward(inputs, h)
-            print(output)
-
-
-            print(output.squeeze())
-            print(labels.float())
-            # calculate the loss and perform backprop
-            loss = criterion(output.squeeze(), labels.float())
+            output = net.forward(inputs)
+            loss = criterion(output, labels)
             loss.backward()
             # `clip_grad_norm` helps prevent the exploding gradient problem in RNNs / LSTMs.
             nn.utils.clip_grad_norm_(net.parameters(), clip)
@@ -112,23 +108,23 @@ def train2(vocab=None):
             # loss stats
             if counter % print_every == 0:
                 # Get validation loss
-                val_h = net.init_hidden(batch_size)
                 val_losses = []
                 net.eval()
                 for data in test_loader:
                     inputs, labels = data["description"], data["classification"]
+                    labels = torch.from_numpy(indices_to_one_hot(labels, output_size))
+                    labels = torch.tensor(labels, dtype=torch.float)
                     inputs = torch.from_numpy(vocab.encode(data["description"], seq_length))
-                    labels = torch.from_numpy(np.asarray([np.asarray([element]) for element in labels]))
 
                     # Creating new variables for the hidden state, otherwise
                     # we'd backprop through the entire training history
-                    val_h = tuple([each.data for each in val_h])
 
                     if (train_on_gpu):
                         inputs, labels = inputs.cuda(), labels.cuda()
 
-                    output, val_h = net.forward(inputs, val_h)
-                    val_loss = criterion(output.squeeze(), labels.float())
+                    output = net.forward(inputs)
+                    loss = criterion(output, labels)
+                    val_loss = criterion(output, labels)
 
                     val_losses.append(val_loss.item())
 
