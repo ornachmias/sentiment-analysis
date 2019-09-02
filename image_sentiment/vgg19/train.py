@@ -61,10 +61,10 @@ def run(model, train_loader, optimizer):
             optimizer.step()
 
             # LOGGING
-            if not batch_idx % 50:
-                print('Epoch: %03d/%03d | Batch %04d/%04d | Cost: %.4f'
-                      % (epoch + 1, settings.num_epochs, batch_idx,
-                         len(train_loader), cost))
+            # if not batch_idx % 50:
+            print('Epoch: %03d/%03d | Batch %04d/%04d | Cost: %.4f'
+                  % (epoch + 1, settings.num_epochs, batch_idx,
+                     len(train_loader), cost))
 
         model.eval()
         with torch.set_grad_enabled(False):  # save memory during inference
@@ -76,3 +76,4 @@ def run(model, train_loader, optimizer):
         print('Time elapsed: %.2f min' % ((time.time() - start_time) / 60))
 
     print('Total Training Time: %.2f min' % ((time.time() - start_time) / 60))
+    torch.save(model, "trained_image_sentiment")

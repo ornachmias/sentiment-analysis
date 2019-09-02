@@ -136,11 +136,11 @@ class Model(torch.nn.Module):
         )
 
         self.classifier = nn.Sequential(
-            nn.Linear(512, 4096),
+            nn.Linear(512, 256),
             nn.ReLU(True),
-            nn.Linear(4096, 4096),
+            nn.Linear(256, 128),
             nn.ReLU(True),
-            nn.Linear(4096, num_classes)
+            nn.Linear(128, num_classes)
         )
 
         for m in self.modules():

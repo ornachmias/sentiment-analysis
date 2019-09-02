@@ -1,7 +1,8 @@
 import torch
 from PIL import Image
 from torchvision.transforms import transforms
-
+from PIL import ImageFile
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 from image_sentiment.vgg19 import settings
 
 
@@ -23,7 +24,10 @@ class T4saSamples(object):
         sample = self.samples[index]
         sample["classification"] = torch.tensor(int(sample["classification"]))
         if load_picture:
-            sample["image"] = self._image_preprocess(self.resize(Image.open(sample["image_path"]), image_size))
+            try:
+                sample["image"] = self._image_preprocess(self.resize(Image.open(sample["image_path"]), image_size, sample["image_path"]))
+            except ValueError:
+                print("Failed to process image. Image path: " + sample["image_path"])
             return sample
 
         return sample
@@ -31,12 +35,20 @@ class T4saSamples(object):
     def get_samples_size(self):
         return len(self.samples)
 
-    def resize(self, im, desired_size):
-        old_size = im.size
-        ratio = float(desired_size) / max(old_size)
-        new_size = tuple([int(x * ratio) for x in old_size])
-        im = im.resize(new_size, Image.ANTIALIAS)
-        new_im = Image.new("RGB", (desired_size, desired_size))
-        new_im.paste(im, ((desired_size - new_size[0]) // 2,
-                          (desired_size - new_size[1]) // 2))
+    def resize(self, im, desired_size, path):
+        try:
+            old_size = im.size
+            ratio = float(desired_size) / max(old_size)
+            new_size = tuple([int(x * ratio) for x in old_size])
+            im = im.resize(new_size, Image.ANTIALIAS)
+            new_im = Image.new("RGB", (desired_size, desired_size))
+            new_im.paste(im, ((desired_size - new_size[0]) // 2,
+                              (desired_size - new_size[1]) // 2))
+        except ValueError:
+            print("Failed to process image. Image path: " + path)
+            ratio = float(desired_size) / min(old_size)
+            new_size = tuple([int(x * ratio) for x in old_size])
+            im = im.resize(new_size, Image.ANTIALIAS)
+            new_im = im.crop((0, 0, desired_size, desired_size))
+
         return new_im
