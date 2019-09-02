@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 
-
+#https://www.deeplearningwizard.com/deep_learning/practical_pytorch/pytorch_lstm_neuralnetwork/
 class LSTMModel(nn.Module):
     def __init__(self, vocab_size, embedding_dim, hidden_dim, layer_dim, output_dim, batch_size):
         super(LSTMModel, self).__init__()
