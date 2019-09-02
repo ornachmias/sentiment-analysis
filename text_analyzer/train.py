@@ -38,7 +38,7 @@ def indices_to_one_hot(data, nb_classes):
 
 
 def get_train_loader():
-    train_dataset = T4saDataset(train=True, configs=configurations, load_image=False, limit=10000)
+    train_dataset = T4saDataset(train=True, configs=configurations, load_image=False, limit=50000)
     return DataLoader(dataset=train_dataset,
                       batch_size=settings.batch_size,
                       shuffle=True)
@@ -128,7 +128,7 @@ def train_and_evaluate():
     criterion = nn.BCELoss()
     optimizer = torch.optim.Adam(net.parameters(), lr=settings.lr)
     print_every = 5
-    epochs = 15
+    epochs = 2
 
     for (epoch, step) in _train(net, vocab, train_loader, criterion, optimizer, epochs):
         if step % print_every == 0:
@@ -136,5 +136,13 @@ def train_and_evaluate():
                   "Step: {}...".format(step))
             _evaluate(net, vocab, test_loader, criterion)
 
+    return net
 
-train_and_evaluate()
+
+def get_model():
+    path = os.path.join(os.path.dirname(__file__), "trained_sentence_sentiment_model")
+    if os.path.exists(path):
+        return torch.load(path)
+    model = train_and_evaluate()
+    torch.save(model, path)
+    return model
