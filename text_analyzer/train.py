@@ -123,8 +123,7 @@ def train_and_evaluate():
     test_loader = get_test_loader()
     vocab = get_vocabulary()
     vocab_size = len(vocab.vocab) + 1  # +1 for the 0 padding
-    net = LSTMModel(vocab_size, settings.embedding_dim, settings.hidden_dim, settings.layer_dim, settings.output_size,
-                    settings.batch_size)
+    net = LSTMModel(vocab_size, settings.embedding_dim, settings.hidden_dim, settings.layer_dim, settings.output_size)
     criterion = nn.BCELoss()
     optimizer = torch.optim.Adam(net.parameters(), lr=settings.lr)
     print_every = 5
@@ -146,3 +145,6 @@ def get_model():
     model = train_and_evaluate()
     torch.save(model, path)
     return model
+
+
+train_and_evaluate()
