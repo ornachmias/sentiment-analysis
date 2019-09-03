@@ -3,7 +3,6 @@ from PIL import Image
 from torchvision.transforms import transforms
 from PIL import ImageFile
 ImageFile.LOAD_TRUNCATED_IMAGES = True
-from image_sentiment.vgg19 import settings
 
 
 class T4saSamples(object):

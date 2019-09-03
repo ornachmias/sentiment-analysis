@@ -1,7 +1,8 @@
-from PIL import Image
+from PIL import Image, ImageFile
 import os
-
 import configurations
+
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 
 def resize(im, desired_size, path):
@@ -25,12 +26,19 @@ def resize(im, desired_size, path):
 
 source_path = "D:\\b-t4sa_imgs\\data"
 dst_path = "./Data_resized"
-
+count = 0
 for subdir, dirs, files in os.walk(source_path):
+    count += 1
+    print(count)
     for file in files:
         current_dir = subdir.replace(source_path, dst_path)
         new_file_path = os.path.join(current_dir, file)
+        if os.path.exists(new_file_path):
+            continue
         os.makedirs(current_dir, exist_ok=True)
         im = Image.open(os.path.join(subdir, file))
-        resized_im = resize(im, configurations.image_size, os.path.join(subdir, file))
-        resized_im.save(new_file_path)
+        try:
+            resized_im = resize(im, 200, os.path.join(subdir, file))
+            resized_im.save(new_file_path)
+        except OSError:
+            im.save(new_file_path)

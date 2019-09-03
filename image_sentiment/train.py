@@ -2,7 +2,7 @@ import torch
 import torch.nn.functional as F
 import time
 
-from image_sentiment.vgg19 import settings
+from image_sentiment import settings
 
 
 def compute_accuracy(model, data_loader):
@@ -62,9 +62,9 @@ def run(model, train_loader, optimizer):
 
             # LOGGING
             # if not batch_idx % 50:
-            print('Epoch: %03d/%03d | Batch %04d/%04d | Cost: %.4f'
+            print('Epoch: %03d/%03d | Batch %04d/%04d | Cost: %.4f | Time: %.2f'
                   % (epoch + 1, settings.num_epochs, batch_idx,
-                     len(train_loader), cost))
+                     len(train_loader), cost, (time.time() - start_time) / 60))
 
         model.eval()
         with torch.set_grad_enabled(False):  # save memory during inference
