@@ -2,7 +2,7 @@ import torch
 import torch.nn.functional as F
 import time
 
-from image_sentiment import settings
+import settings
 
 
 def compute_accuracy(model, data_loader):

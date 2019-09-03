@@ -1,7 +1,7 @@
 import torch
 
 # Device
-DEVICE = torch.device("cpu")
+DEVICE = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
 # Hyperparameters
 random_seed = 1

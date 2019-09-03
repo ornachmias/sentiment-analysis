@@ -1,17 +1,18 @@
 import torch
 
-from image_sentiment import settings, train
-from image_sentiment.model import Model
-from t4sa.t4sa_dataset import T4saDataset
+import settings
+import train
+from model import Model
+from t4sa_dataset import T4saDataset
 from torch.utils.data import DataLoader
 
 import configurations
 
 
-configurations.images_directory = "../data/b-t4sa_imgs"
-configurations.images_classification_train_file = "../data/b-t4sa_imgs/b-t4sa_train.txt"
-configurations.images_classification_eval_file = "../data/b-t4sa_imgs/b-t4sa_val.txt"
-configurations.descriptions_file = "../data/raw_tweets_text.csv"
+configurations.images_directory = "./data/b-t4sa_imgs"
+configurations.images_classification_train_file = "./data/b-t4sa_imgs/b-t4sa_train.txt"
+configurations.images_classification_eval_file = "./data/b-t4sa_imgs/b-t4sa_val.txt"
+configurations.descriptions_file = "./data/raw_tweets_text.csv"
 
 train_dataset = T4saDataset(train=True, configs=configurations, load_image=True, limit=10000)
 test_dataset = T4saDataset(train=False, configs=configurations, load_image=True, limit=1000)

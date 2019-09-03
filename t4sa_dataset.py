@@ -4,7 +4,7 @@ import os
 from tqdm import tqdm
 from torch.utils.data import Dataset
 
-from t4sa.t4sa_samples import T4saSamples
+from t4sa_samples import T4saSamples
 import csv
 
 
