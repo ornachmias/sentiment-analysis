@@ -42,6 +42,6 @@ class Model(torch.nn.Module):
 
         out = out.view(-1, 21632)
         out = self.fc1(out)
-        probas = F.softmax(out, dim=1)
+        probas = F.log_softmax(out, dim=1)
 
         return out, probas

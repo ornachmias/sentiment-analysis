@@ -9,6 +9,7 @@ import torch.nn.functional as F
 
 import configurations
 
+
 def train(model, device, train_loader, optimizer, epoch):
     model.train()
     for batch_idx, features in enumerate(train_loader):
@@ -17,7 +18,7 @@ def train(model, device, train_loader, optimizer, epoch):
         data, target = data.to(device), target.to(device)
         optimizer.zero_grad()
         logits, output = model(data)
-        loss = F.cross_entropy(output, target)
+        loss = F.nll_loss(output, target)
         loss.backward()
         optimizer.step()
         print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
@@ -35,7 +36,7 @@ def test(model, device, test_loader):
             target = features["classification"]
             data, target = data.to(device), target.to(device)
             logits, output = model(data)
-            test_loss += F.cross_entropy(output, target, reduction='sum').item() # sum up batch loss
+            test_loss += F.nll_loss(output, target, reduction='sum').item() # sum up batch loss
             pred = output.argmax(dim=1, keepdim=True) # get the index of the max log-probability
             correct += pred.eq(target.view_as(pred)).sum().item()
 
@@ -63,11 +64,6 @@ test_loader = DataLoader(dataset=test_dataset,
                          batch_size=settings.batch_size,
                          shuffle=False)
 
-for features in train_loader:
-    print('Image batch dimensions:', features["image"].shape)
-    print('Image label dimensions:', features["classification"].shape)
-    break
-
 torch.manual_seed(settings.random_seed)
 model = Model(num_classes=settings.num_classes).to(settings.DEVICE)
 
@@ -78,6 +74,3 @@ for epoch in range(1, settings.num_epochs + 1):
     test(model, settings.DEVICE, test_loader)
 
 torch.save(model.state_dict(), "cnn.pt")
-
-
-# train.run(model, train_loader, optimizer)
