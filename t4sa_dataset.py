@@ -6,6 +6,7 @@ from torch.utils.data import Dataset
 
 from t4sa_samples import T4saSamples
 import csv
+import pickle
 
 
 class T4saDataset(Dataset):
@@ -40,6 +41,11 @@ class T4saDataset(Dataset):
         return self._samples.get_sample(idx, self._load_image, self._image_size)
 
     def _load_samples(self, limit):
+        pickle_file = "./samples.p"
+        if os.path.exists(pickle_file):
+            self._samples = pickle.load(open(pickle_file, "rb"))
+            return
+
         image_id_to_text = self._load_descriptors()
         with open(self._images_classification_file) as classification_file:
             csv_reader = csv.reader(classification_file, delimiter=' ')
@@ -49,7 +55,13 @@ class T4saDataset(Dataset):
                 if limit is not None and self._samples.get_samples_size() == limit:
                     break
 
+            pickle.dump(self._samples, open(pickle_file, "wb"))
+
     def _load_descriptors(self):
+        pickle_file = "./descriptors.p"
+        if os.path.exists(pickle_file):
+            return pickle.load(open(pickle_file, "rb"))
+
         image_id_to_text = {}
         with open(self._descriptions_file, encoding='utf-8') as csv_file:
             csv_reader = csv.reader(csv_file, delimiter=',')
@@ -57,4 +69,5 @@ class T4saDataset(Dataset):
             for row in tqdm(csv_reader):
                 image_id_to_text[row[0]] = row[1]
 
+        pickle.dump(image_id_to_text, open(pickle_file, "wb"))
         return image_id_to_text

@@ -6,8 +6,8 @@ DEVICE = torch.device("cuda") if torch.cuda.is_available() else torch.device("cp
 # Hyperparameters
 random_seed = 1
 learning_rate = 0.001
-num_epochs = 2
-batch_size = 128
+num_epochs = 5
+batch_size = 10
 
 # Architecture
 num_classes = 3

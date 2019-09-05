@@ -9,7 +9,7 @@ class T4saSamples(object):
     def __init__(self):
         self.samples = []
         self._image_preprocess = transforms.Compose([transforms.ToTensor(),
-                                                     transforms.Normalize([0, 0, 0], [1, 1, 1], inplace=False)])
+                                                     transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])])
 
     def add_sample(self, image_path, description, classification):
         self.samples.append({
