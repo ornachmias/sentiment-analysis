@@ -4,3 +4,8 @@
 *.pickle
 *__pycache__*
 *trained_sentence_sentiment_model
+.gitignore
+*cnn.pt
+*descriptors.p
+data
+*samples.p
