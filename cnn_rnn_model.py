@@ -43,7 +43,7 @@ class CombinedModel(nn.Module):
         # pass through the fully connected
         images_out = self.embed(densenet_outputs)
 
-        embeddings = self.word_embeddings(sentences)
+        embeddings = self.word_embeddings(sentences.to(torch.int64))
 
         images_lstm_hidden_state = torch.zeros((1, images.size()[0], self.hidden_dim)).requires_grad_()
         images_lstm_cell_state = torch.zeros((1, images_out.size()[0], self.hidden_dim)).requires_grad_()

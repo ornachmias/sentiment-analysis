@@ -122,8 +122,6 @@ def _evaluate(net, vocab, test_loader, criterion):
         val_losses.append(val_loss.item())
 
         _, predicted = torch.max(output.data, 1)
-        print(predicted)
-        print(labels)
         # Total number of labels
         total += labels.size(0)
 

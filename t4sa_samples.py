@@ -21,7 +21,11 @@ class T4saSamples(object):
 
     def get_sample(self, index, load_picture=False, image_size=None):
         sample = self.samples[index]
-        sample["classification"] = torch.tensor(int(sample["classification"]))
+        raw_class = 0
+        if int(sample["classification"]) == 2:
+            raw_class = 1
+
+        sample["classification"] = torch.tensor(raw_class)
         if load_picture:
             try:
                 sample["image"] = self._image_preprocess(self.resize(Image.open(sample["image_path"]), image_size, sample["image_path"]))
