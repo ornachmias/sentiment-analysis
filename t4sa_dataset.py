@@ -33,6 +33,7 @@ class T4saDataset(Dataset):
 
         self._samples = T4saSamples()
         self._load_samples(limit)
+        self._samples.samples = [s for s in self._samples.samples if int(s["classification"]) != 1]
 
     def __len__(self):
         return self._samples.get_samples_size()

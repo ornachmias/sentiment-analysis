@@ -16,7 +16,7 @@ from vocab import Vocab
 DEVICE = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
 # Hyperparameters
-batch_size = 50
+batch_size = 5
 embedding_dim = 150
 seq_length = 150
 hidden_dim = 128
@@ -55,14 +55,14 @@ def indices_to_one_hot(data, nb_classes):
 
 
 def get_train_loader():
-    train_dataset = T4saDataset(train=True, configs=configurations, load_image=True, limit=10000)
+    train_dataset = T4saDataset(train=True, configs=configurations, load_image=True, limit=1000)
     return DataLoader(dataset=train_dataset,
                       batch_size=batch_size,
                       shuffle=True)
 
 
 def get_t_loader():
-    test_dataset = T4saDataset(train=False, configs=configurations, load_image=True, limit=1000)
+    test_dataset = T4saDataset(train=False, configs=configurations, load_image=True, limit=100)
     return DataLoader(dataset=test_dataset,
                       batch_size=batch_size,
                       shuffle=False)
