@@ -1,7 +1,6 @@
 import torch
 
 import settings
-import train
 from model import Model
 from t4sa_dataset import T4saDataset
 from torch.utils.data import DataLoader

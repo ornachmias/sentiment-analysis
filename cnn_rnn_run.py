@@ -1,16 +1,34 @@
+import torch
 import os
 
 import numpy as np
 import pickle
-import torch
 from torch import nn
 from torch.utils.data.dataloader import DataLoader
 
 import configurations
+from cnn_rnn_model import CombinedModel
 from t4sa_dataset import T4saDataset
-from text_analyzer import settings
 from text_analyzer.model import LSTMModel
 from vocab import Vocab
+
+
+# Device
+DEVICE = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+
+# Hyperparameters
+batch_size = 2
+embedding_dim = 100
+seq_length = 150
+hidden_dim = 128
+layer_dim = 3
+lr = 0.01
+clip = 5
+
+# Architecture
+output_size = 2
+
+
 
 train_on_gpu = False
 
@@ -38,16 +56,16 @@ def indices_to_one_hot(data, nb_classes):
 
 
 def get_train_loader():
-    train_dataset = T4saDataset(train=True, configs=configurations, load_image=False, limit=50000)
+    train_dataset = T4saDataset(train=True, configs=configurations, load_image=True, limit=10)
     return DataLoader(dataset=train_dataset,
-                      batch_size=settings.batch_size,
+                      batch_size=batch_size,
                       shuffle=True)
 
 
 def get_test_loader():
-    test_dataset = T4saDataset(train=False, configs=configurations, load_image=False, limit=100)
+    test_dataset = T4saDataset(train=False, configs=configurations, load_image=True, limit=10)
     return DataLoader(dataset=test_dataset,
-                      batch_size=settings.batch_size,
+                      batch_size=batch_size,
                       shuffle=False)
 
 
@@ -64,20 +82,21 @@ def _train(net, vocab, train_loader, criterion, optimizer, epochs):
             optimizer.zero_grad()
 
             inputs, labels = data["description"], data["classification"]
-            labels = torch.from_numpy(indices_to_one_hot(labels, settings.output_size))
+            images = data["image"]
+            labels = torch.from_numpy(indices_to_one_hot(labels, output_size))
             labels = torch.tensor(labels, dtype=torch.float)
-            inputs = torch.from_numpy(vocab.encode(data["description"], settings.seq_length))
+            inputs = torch.from_numpy(vocab.encode(data["description"], seq_length))
 
             if (train_on_gpu):
                 inputs, labels = inputs.cuda(), labels.cuda()
 
             # zero accumulated gradients
             net.zero_grad()
-            output = net.forward(inputs)
+            output = net.forward(inputs, images)
             loss = criterion(output, labels)
             loss.backward()
             # `clip_grad_norm` helps prevent the exploding gradient problem in RNNs / LSTMs.
-            nn.utils.clip_grad_norm_(net.parameters(), settings.clip)
+            nn.utils.clip_grad_norm_(net.parameters(), clip)
             optimizer.step()
 
             yield (e, step)
@@ -91,13 +110,14 @@ def _evaluate(net, vocab, test_loader, criterion):
     net.eval()
     for data in test_loader:
         inputs, labels = data["description"], data["classification"]
-        hotspot_labels = torch.from_numpy(indices_to_one_hot(labels, settings.output_size))
+        images =  data["image"]
+        hotspot_labels = torch.from_numpy(indices_to_one_hot(labels, output_size))
         hotspot_labels = torch.tensor(hotspot_labels, dtype=torch.float)
-        inputs = torch.from_numpy(vocab.encode(data["description"], settings.seq_length))
+        inputs = torch.from_numpy(vocab.encode(data["description"], seq_length))
         if (train_on_gpu):
             inputs, hotspot_labels = inputs.cuda(), labels.cuda()
 
-        output = net.forward(inputs)
+        output = net.forward(inputs, images)
         loss = criterion(output, hotspot_labels)
         val_loss = criterion(output, hotspot_labels)
         val_losses.append(val_loss.item())
@@ -123,9 +143,9 @@ def train_and_evaluate():
     test_loader = get_test_loader()
     vocab = get_vocabulary()
     vocab_size = len(vocab.vocab) + 1  # +1 for the 0 padding
-    net = LSTMModel(vocab_size, settings.embedding_dim, settings.hidden_dim, settings.layer_dim, settings.output_size)
+    net = CombinedModel(vocab_size, embedding_dim, hidden_dim, layer_dim, output_size)
     criterion = nn.BCELoss()
-    optimizer = torch.optim.Adam(net.parameters(), lr=settings.lr)
+    optimizer = torch.optim.Adam(net.parameters(), lr=lr)
     print_every = 5
     epochs = 2
 
