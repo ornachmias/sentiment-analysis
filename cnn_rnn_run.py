@@ -17,10 +17,10 @@ DEVICE = torch.device("cuda") if torch.cuda.is_available() else torch.device("cp
 
 # Hyperparameters
 batch_size = 50
-embedding_dim = 100
+embedding_dim = 150
 seq_length = 150
 hidden_dim = 128
-layer_dim = 3
+layer_dim = 2
 lr = 0.001
 clip = 5
 
@@ -142,7 +142,7 @@ def train_and_evaluate():
     test_loader = get_t_loader()
     vocab = get_vocabulary()
     vocab_size = len(vocab.vocab) + 1  # +1 for the 0 padding
-    net = CombinedModel(vocab_size, embedding_dim, hidden_dim, layer_dim, output_size)
+    net = CombinedModel(vocab_size, embedding_dim, hidden_dim, output_size)
     criterion = nn.BCELoss()
     optimizer = torch.optim.Adam(net.parameters(), lr=lr)
     print_every = 5

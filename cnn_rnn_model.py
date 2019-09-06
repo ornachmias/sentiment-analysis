@@ -1,79 +1,54 @@
 import torch
 from torch import nn
 
-
 # https://www.deeplearningwizard.com/deep_learning/practical_pytorch/pytorch_lstm_neuralnetwork/
+from torchvision.models import densenet121
+
+
 class CombinedModel(nn.Module):
-    def __init__(self, vocab_size, embedding_dim, hidden_dim, layer_dim, output_dim):
+    def __init__(self, vocab_size, embedding_dim, hidden_dim, output_dim):
         super(CombinedModel, self).__init__()
         # Hidden dimensions
         self.hidden_dim = hidden_dim
 
-        # Number of hidden layers
-        self.layer_dim = layer_dim
-
         self.word_embeddings = nn.Embedding(vocab_size, embedding_dim)
 
-        # Building your LSTM
-        # batch_first=True causes input/output tensors to be of shape
-        # (batch_dim, seq_dim, feature_dim)
-        self._features_dim = 21632
-        self.image_lstm = nn.LSTM(self._features_dim, hidden_dim, layer_dim, batch_first=True)
+        self.image_lstm = nn.LSTM(input_size=1024, hidden_size=hidden_dim)
 
-        self.lstm = nn.LSTM(embedding_dim, hidden_dim, layer_dim, batch_first=True)
+        # get the pretrained densenet model
+        self.densenet = densenet121(pretrained=True)
+
+        # replace the classifier with a fully connected embedding layer
+        self.densenet.classifier = nn.Linear(in_features=1024, out_features=1024)
+
+        # add another fully connected layer
+        self.embed = nn.Linear(in_features=1024, out_features=1024)
+
+        # dropout layer
+        self.dropout = nn.Dropout(p=0.5)
+
+        # activation layers
+        self.prelu = nn.PReLU()
+
+        self.lstm = nn.LSTM(input_size=embedding_dim, hidden_size=hidden_dim, batch_first=True)
 
         # Readout layer
         self.fc = nn.Linear(hidden_dim, output_dim)
 
         self.soft_max = nn.Softmax(dim=1)
 
-
-        self.features1 = nn.Sequential(
-            nn.Conv2d(in_channels=3, out_channels=32, kernel_size=5, stride=1, padding=1),
-            nn.ReLU(),
-            nn.BatchNorm2d(num_features=32)
-        )
-        self.features2 = nn.Sequential(
-            nn.Conv2d(in_channels=32, out_channels=32, kernel_size=5, stride=1, padding=1),
-            nn.ReLU(),
-            nn.BatchNorm2d(num_features=32),
-            nn.MaxPool2d(kernel_size=4),
-            nn.Dropout(p=0.2)
-        )
-        self.features3 = nn.Sequential(
-            nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, stride=1, padding=1),
-            nn.ReLU(),
-            nn.BatchNorm2d(num_features=64),
-        )
-        self.features4 = nn.Sequential(
-            nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, stride=1, padding=1),
-            nn.ReLU(),
-            nn.BatchNorm2d(num_features=128),
-            nn.MaxPool2d(kernel_size=4),
-            nn.Dropout(p=0.2)
-        )
-
     def forward(self, sentences, images):
-        images_out = self.features1(images)
-        images_out = self.features2(images_out)
-        images_out = self.features3(images_out)
-        images_out = self.features4(images_out)
-        images_out = images_out.view(-1, self._features_dim)
+        densenet_outputs = self.dropout(self.prelu(self.densenet(images)))
+
+        # pass through the fully connected
+        images_out = self.embed(densenet_outputs)
 
         embeddings = self.word_embeddings(sentences)
-        # # Initialize hidden state with zeros
-        # lstm_hidden_state = torch.zeros(self.layer_dim, sentences.size()[0], self.hidden_dim).requires_grad_()
-        # # Initialize cell state
-        #lstm_cell_state = torch.zeros(self.layer_dim, sentences.size()[0], self.hidden_dim).requires_grad_()
 
-        images_lstm_hidden_state = torch.zeros(self.layer_dim, images_out.size()[0], self.hidden_dim).requires_grad_()
-        images_lstm_cell_state = torch.zeros(self.layer_dim, images_out.size()[0], self.hidden_dim).requires_grad_()
+        images_lstm_hidden_state = torch.zeros((1, images.size()[0], self.hidden_dim)).requires_grad_()
+        images_lstm_cell_state = torch.zeros((1, images_out.size()[0], self.hidden_dim)).requires_grad_()
 
-
-        # We need to detach as we are doing truncated backpropagation through time (BPTT)
-        # If we don't, we'll backprop all the way to the start even after going through another batch
-
-        _, (hn, cn) = self.image_lstm(images_out, (images_lstm_hidden_state.detach(), images_lstm_cell_state.detach()))
+        out, (hn, cn) = self.image_lstm(images_out, (images_lstm_hidden_state.detach(), images_lstm_cell_state.detach()))
         out, (hn, cn) = self.lstm(embeddings, (hn.detach(), cn.detach()))
 
         # Index hidden state of last time step
