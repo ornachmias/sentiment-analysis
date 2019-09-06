@@ -55,14 +55,14 @@ def indices_to_one_hot(data, nb_classes):
 
 
 def get_train_loader():
-    train_dataset = T4saDataset(train=True, configs=configurations, load_image=True, limit=1000)
+    train_dataset = T4saDataset(train=True, configs=configurations, load_image=True, limit=10000)
     return DataLoader(dataset=train_dataset,
                       batch_size=batch_size,
                       shuffle=True)
 
 
 def get_t_loader():
-    test_dataset = T4saDataset(train=False, configs=configurations, load_image=True, limit=100)
+    test_dataset = T4saDataset(train=False, configs=configurations, load_image=True, limit=1000)
     return DataLoader(dataset=test_dataset,
                       batch_size=batch_size,
                       shuffle=False)
@@ -122,7 +122,8 @@ def _evaluate(net, vocab, test_loader, criterion):
         val_losses.append(val_loss.item())
 
         _, predicted = torch.max(output.data, 1)
-
+        print(predicted)
+        print(labels)
         # Total number of labels
         total += labels.size(0)
 

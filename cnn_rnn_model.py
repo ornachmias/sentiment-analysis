@@ -13,7 +13,7 @@ class CombinedModel(nn.Module):
 
         self.word_embeddings = nn.Embedding(vocab_size, embedding_dim)
 
-        self.image_lstm = nn.LSTM(input_size=1024, hidden_size=hidden_dim)
+        self.image_lstm = nn.LSTM(input_size=1024, hidden_size=hidden_dim, batch_first=True)
 
         # get the pretrained densenet model
         self.densenet = densenet121(pretrained=True)
@@ -47,7 +47,7 @@ class CombinedModel(nn.Module):
 
         images_lstm_hidden_state = torch.zeros((1, images.size()[0], self.hidden_dim)).requires_grad_()
         images_lstm_cell_state = torch.zeros((1, images_out.size()[0], self.hidden_dim)).requires_grad_()
-
+        images_out = images_out.view(images_out.size()[0], 1, -1)
         out, (hn, cn) = self.image_lstm(images_out, (images_lstm_hidden_state.detach(), images_lstm_cell_state.detach()))
         out, (hn, cn) = self.lstm(embeddings, (hn.detach(), cn.detach()))
 
