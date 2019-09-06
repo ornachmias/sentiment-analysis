@@ -64,15 +64,16 @@ class CombinedModel(nn.Module):
         # # Initialize hidden state with zeros
         # lstm_hidden_state = torch.zeros(self.layer_dim, sentences.size()[0], self.hidden_dim).requires_grad_()
         # # Initialize cell state
-        # lstm_cell_state = torch.zeros(self.layer_dim, sentences.size()[0], self.hidden_dim).requires_grad_()
+        #lstm_cell_state = torch.zeros(self.layer_dim, sentences.size()[0], self.hidden_dim).requires_grad_()
 
+        images_lstm_hidden_state = torch.zeros(self.layer_dim, images_out.size()[0], self.hidden_dim).requires_grad_()
         images_lstm_cell_state = torch.zeros(self.layer_dim, images_out.size()[0], self.hidden_dim).requires_grad_()
 
 
         # We need to detach as we are doing truncated backpropagation through time (BPTT)
         # If we don't, we'll backprop all the way to the start even after going through another batch
 
-        _, (hn, cn) = self.image_lstm(images, (images_out.detach(), images_lstm_cell_state.detach()))
+        _, (hn, cn) = self.image_lstm(images_out, (images_lstm_hidden_state.detach(), images_lstm_cell_state.detach()))
         out, (hn, cn) = self.lstm(embeddings, (hn.detach(), cn.detach()))
 
         # Index hidden state of last time step

@@ -9,7 +9,6 @@ from torch.utils.data.dataloader import DataLoader
 import configurations
 from cnn_rnn_model import CombinedModel
 from t4sa_dataset import T4saDataset
-from text_analyzer.model import LSTMModel
 from vocab import Vocab
 
 
@@ -17,12 +16,12 @@ from vocab import Vocab
 DEVICE = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
 # Hyperparameters
-batch_size = 2
+batch_size = 50
 embedding_dim = 100
 seq_length = 150
 hidden_dim = 128
 layer_dim = 3
-lr = 0.01
+lr = 0.001
 clip = 5
 
 # Architecture
@@ -56,14 +55,14 @@ def indices_to_one_hot(data, nb_classes):
 
 
 def get_train_loader():
-    train_dataset = T4saDataset(train=True, configs=configurations, load_image=True, limit=10)
+    train_dataset = T4saDataset(train=True, configs=configurations, load_image=True, limit=1000)
     return DataLoader(dataset=train_dataset,
                       batch_size=batch_size,
                       shuffle=True)
 
 
-def get_test_loader():
-    test_dataset = T4saDataset(train=False, configs=configurations, load_image=True, limit=10)
+def get_t_loader():
+    test_dataset = T4saDataset(train=False, configs=configurations, load_image=True, limit=100)
     return DataLoader(dataset=test_dataset,
                       batch_size=batch_size,
                       shuffle=False)
@@ -140,7 +139,7 @@ def _evaluate(net, vocab, test_loader, criterion):
 
 def train_and_evaluate():
     train_loader = get_train_loader()
-    test_loader = get_test_loader()
+    test_loader = get_t_loader()
     vocab = get_vocabulary()
     vocab_size = len(vocab.vocab) + 1  # +1 for the 0 padding
     net = CombinedModel(vocab_size, embedding_dim, hidden_dim, layer_dim, output_size)
