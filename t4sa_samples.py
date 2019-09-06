@@ -1,3 +1,5 @@
+import copy
+
 import torch
 from PIL import Image
 from torchvision.transforms import transforms
@@ -20,7 +22,7 @@ class T4saSamples(object):
         })
 
     def get_sample(self, index, load_picture=False, image_size=None):
-        sample = self.samples[index]
+        sample = copy.deepcopy(self.samples[index])
         raw_class = 0
         if int(sample["classification"]) == 2:
             raw_class = 1

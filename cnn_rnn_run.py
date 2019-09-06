@@ -16,7 +16,7 @@ from vocab import Vocab
 DEVICE = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
 # Hyperparameters
-batch_size = 5
+batch_size = 30
 embedding_dim = 150
 seq_length = 150
 hidden_dim = 128
@@ -132,8 +132,7 @@ def _evaluate(net, vocab, test_loader, criterion):
     net.train()
     print("Loss: {:.6f}...".format(loss.item()),
           "Val Loss: {:.6f}".format(np.mean(val_losses)),
-          "Accuracy : {:.6f}".format(accuracy)
-          )
+          "Accuracy : {:.6f}".format(accuracy))
 
 
 def train_and_evaluate():
