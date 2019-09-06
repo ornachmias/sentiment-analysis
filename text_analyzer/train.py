@@ -7,7 +7,7 @@ from torch import nn
 from torch.utils.data.dataloader import DataLoader
 
 import configurations
-from t4sa.t4sa_dataset import T4saDataset
+from t4sa_dataset import T4saDataset
 from text_analyzer import settings
 from text_analyzer.model import LSTMModel
 from text_analyzer.vocab import Vocab

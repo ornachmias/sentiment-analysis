@@ -53,8 +53,8 @@ configurations.images_classification_train_file = "./data/b-t4sa_imgs/b-t4sa_tra
 configurations.images_classification_eval_file = "./data/b-t4sa_imgs/b-t4sa_val.txt"
 configurations.descriptions_file = "./data/raw_tweets_text.csv"
 
-train_dataset = T4saDataset(train=True, configs=configurations, load_image=True, limit=10000)
-test_dataset = T4saDataset(train=False, configs=configurations, load_image=True, limit=1000)
+train_dataset = T4saDataset(train=True, configs=configurations, load_image=True, limit=500)
+test_dataset = T4saDataset(train=False, configs=configurations, load_image=True, limit=50)
 
 train_loader = DataLoader(dataset=train_dataset,
                           batch_size=settings.batch_size,
