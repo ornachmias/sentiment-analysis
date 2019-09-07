@@ -147,4 +147,4 @@ def get_model():
     return model
 
 
-get_model()
+train_and_evaluate()
