@@ -37,14 +37,14 @@ def indices_to_one_hot(data, nb_classes):
 
 
 def get_train_loader():
-    train_dataset = T4saDataset(train=True, configs=configurations, load_image=False, limit=50000)
+    train_dataset = T4saDataset(train=True, configs=configurations, load_image=False, limit=configurations.training_size)
     return DataLoader(dataset=train_dataset,
                       batch_size=configurations.batch_size,
                       shuffle=True)
 
 
 def get_test_loader():
-    test_dataset = T4saDataset(train=False, configs=configurations, load_image=False, limit=100)
+    test_dataset = T4saDataset(train=False, configs=configurations, load_image=False, limit=configurations.eval_size)
     return DataLoader(dataset=test_dataset,
                       batch_size=configurations.batch_size,
                       shuffle=True)
