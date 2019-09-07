@@ -4,6 +4,7 @@ from torch import nn
 # https://www.deeplearningwizard.com/deep_learning/practical_pytorch/pytorch_lstm_neuralnetwork/
 from torchvision.models import densenet121
 
+DEVICE = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
 class CombinedModel(nn.Module):
     def __init__(self, vocab_size, embedding_dim, hidden_dim, output_dim):
@@ -45,8 +46,9 @@ class CombinedModel(nn.Module):
 
         embeddings = self.word_embeddings(sentences.to(torch.int64))
 
-        images_lstm_hidden_state = torch.zeros((1, images.size()[0], self.hidden_dim)).requires_grad_()
-        images_lstm_cell_state = torch.zeros((1, images_out.size()[0], self.hidden_dim)).requires_grad_()
+        images_lstm_hidden_state = torch.zeros((1, images.size()[0], self.hidden_dim)).requires_grad_().to(DEVICE)
+        images_lstm_cell_state = torch.zeros((1, images_out.size()[0], self.hidden_dim)).requires_grad_().to(DEVICE)
+
         images_out = images_out.view(images_out.size()[0], 1, -1)
         out, (hn, cn) = self.image_lstm(images_out, (images_lstm_hidden_state.detach(), images_lstm_cell_state.detach()))
         out, (hn, cn) = self.lstm(embeddings, (hn.detach(), cn.detach()))

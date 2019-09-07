@@ -6,7 +6,6 @@ from torch.utils.data import Dataset
 
 from t4sa_samples import T4saSamples
 import csv
-import pickle
 
 
 class T4saDataset(Dataset):

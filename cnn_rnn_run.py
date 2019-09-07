@@ -11,12 +11,11 @@ from cnn_rnn_model import CombinedModel
 from t4sa_dataset import T4saDataset
 from vocab import Vocab
 
-
 # Device
 DEVICE = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
 # Hyperparameters
-batch_size = 30
+batch_size = 50
 embedding_dim = 150
 seq_length = 150
 hidden_dim = 128
@@ -27,9 +26,7 @@ clip = 5
 # Architecture
 output_size = 2
 
-
-
-train_on_gpu = False
+train_on_gpu = torch.cuda.is_available()
 
 
 def get_vocabulary(refresh=False):
@@ -55,7 +52,7 @@ def indices_to_one_hot(data, nb_classes):
 
 
 def get_train_loader():
-    train_dataset = T4saDataset(train=True, configs=configurations, load_image=True, limit=1000)
+    train_dataset = T4saDataset(train=True, configs=configurations, load_image=True, limit=50000)
     return DataLoader(dataset=train_dataset,
                       batch_size=batch_size,
                       shuffle=True)
@@ -65,7 +62,7 @@ def get_t_loader():
     test_dataset = T4saDataset(train=False, configs=configurations, load_image=True, limit=100)
     return DataLoader(dataset=test_dataset,
                       batch_size=batch_size,
-                      shuffle=False)
+                      shuffle=True)
 
 
 def _train(net, vocab, train_loader, criterion, optimizer, epochs):
@@ -87,7 +84,7 @@ def _train(net, vocab, train_loader, criterion, optimizer, epochs):
             inputs = torch.from_numpy(vocab.encode(data["description"], seq_length))
 
             if (train_on_gpu):
-                inputs, labels = inputs.cuda(), labels.cuda()
+                inputs, labels, images = inputs.cuda(), labels.cuda(), images.cuda()
 
             # zero accumulated gradients
             net.zero_grad()
@@ -109,12 +106,12 @@ def _evaluate(net, vocab, test_loader, criterion):
     net.eval()
     for data in test_loader:
         inputs, labels = data["description"], data["classification"]
-        images =  data["image"]
+        images = data["image"]
         hotspot_labels = torch.from_numpy(indices_to_one_hot(labels, output_size))
         hotspot_labels = torch.tensor(hotspot_labels, dtype=torch.float)
         inputs = torch.from_numpy(vocab.encode(data["description"], seq_length))
         if (train_on_gpu):
-            inputs, hotspot_labels = inputs.cuda(), labels.cuda()
+            inputs, hotspot_labels, images = inputs.cuda(), hotspot_labels.cuda(), images.cuda()
 
         output = net.forward(inputs, images)
         loss = criterion(output, hotspot_labels)
@@ -126,6 +123,8 @@ def _evaluate(net, vocab, test_loader, criterion):
         total += labels.size(0)
 
         # Total correct predictions
+        labels = labels.to(DEVICE)
+
         correct += (predicted == labels).sum()
 
     accuracy = 100 * correct / total
@@ -141,6 +140,8 @@ def train_and_evaluate():
     vocab = get_vocabulary()
     vocab_size = len(vocab.vocab) + 1  # +1 for the 0 padding
     net = CombinedModel(vocab_size, embedding_dim, hidden_dim, output_size)
+    if train_on_gpu:
+        net.cuda()
     criterion = nn.BCELoss()
     optimizer = torch.optim.Adam(net.parameters(), lr=lr)
     print_every = 5
