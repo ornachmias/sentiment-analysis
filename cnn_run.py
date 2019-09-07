@@ -12,8 +12,6 @@ from t4sa_dataset import T4saDataset
 # Hyperparameters
 lr = 0.001
 
-# Architecture
-output_size = 2
 
 def indices_to_one_hot(data, nb_classes):
     """Convert an iterable of indices to one-hot encoded labels."""
@@ -48,9 +46,9 @@ def _train(net, train_loader, criterion, optimizer, epochs):
             optimizer.zero_grad()
 
             labels = data["classification"]
-            images = data["image"]
-            labels = torch.from_numpy(indices_to_one_hot(labels, output_size))
-            labels = torch.tensor(labels, dtype=torch.float)
+            images = data["image"].to(configurations.DEVICE)
+            labels = torch.from_numpy(indices_to_one_hot(labels, configurations.output_size))
+            labels = torch.tensor(labels, dtype=torch.float, device=configurations.DEVICE)
 
             # zero accumulated gradients
             net.zero_grad()
@@ -70,9 +68,9 @@ def _evaluate(net, test_loader, criterion):
     net.eval()
     for data in test_loader:
         labels = data["classification"]
-        images = data["image"]
-        hotspot_labels = torch.from_numpy(indices_to_one_hot(labels, output_size))
-        hotspot_labels = torch.tensor(hotspot_labels, dtype=torch.float)
+        images = data["image"].to(configurations.DEVICE)
+        hotspot_labels = torch.from_numpy(indices_to_one_hot(labels, configurations.output_size))
+        hotspot_labels = torch.tensor(hotspot_labels, dtype=torch.float, device=configurations.DEVICE)
 
         output = net.forward(images)
         loss = criterion(output, hotspot_labels)
@@ -96,15 +94,14 @@ def _evaluate(net, test_loader, criterion):
 def train_and_evaluate():
     train_loader = get_train_loader()
     test_loader = get_t_loader()
-    net = CnnModel()
+    net = CnnModel().to(configurations.DEVICE)
     criterion = nn.BCELoss()
     optimizer = torch.optim.Adam(net.parameters(), lr=lr)
     print_every = 5
-    epochs = 2
 
-    for (epoch, step) in _train(net, train_loader, criterion, optimizer, epochs):
+    for (epoch, step) in _train(net, train_loader, criterion, optimizer, configurations.epochs):
         if step % print_every == 0:
-            print("Epoch: {}/{}...".format(epoch + 1, epochs),
+            print("Epoch: {}/{}...".format(epoch + 1, configurations.epochs),
                   "Step: {}...".format(step))
             _evaluate(net, test_loader, criterion)
 
