@@ -8,6 +8,7 @@ from torch.utils.data.dataloader import DataLoader
 
 import configurations
 from cnn_rnn_model import CnnRnnModel
+from log_writer import write_parameters, write_batch
 from t4sa_dataset import T4saDataset
 from vocab import Vocab
 
@@ -42,14 +43,14 @@ def indices_to_one_hot(data, nb_classes):
 
 
 def get_train_loader():
-    train_dataset = T4saDataset(train=True, configs=configurations, load_image=True, limit=50000)
+    train_dataset = T4saDataset(train=True, configs=configurations, load_image=True, limit=configurations.training_size)
     return DataLoader(dataset=train_dataset,
                       batch_size=configurations.batch_size,
                       shuffle=True)
 
 
 def get_t_loader():
-    test_dataset = T4saDataset(train=False, configs=configurations, load_image=True, limit=100)
+    test_dataset = T4saDataset(train=False, configs=configurations, load_image=True, limit=configurations.eval_size)
     return DataLoader(dataset=test_dataset,
                       batch_size=configurations.batch_size,
                       shuffle=True)
@@ -72,7 +73,8 @@ def _train(net, vocab, train_loader, criterion, optimizer, epochs):
             labels = torch.from_numpy(indices_to_one_hot(labels, configurations.output_size))
             labels = torch.tensor(labels, dtype=torch.float)
             inputs = torch.from_numpy(vocab.encode(data["description"], configurations.seq_length))
-            inputs, labels, images = inputs.to(configurations.DEVICE), labels.to(configurations.DEVICE), images.to(configurations.DEVICE)
+            inputs, labels, images = inputs.to(configurations.DEVICE), labels.to(configurations.DEVICE), images.to(
+                configurations.DEVICE)
 
             # zero accumulated gradients
             net.zero_grad()
@@ -86,7 +88,7 @@ def _train(net, vocab, train_loader, criterion, optimizer, epochs):
             yield (e, step)
 
 
-def _evaluate(net, vocab, test_loader, criterion):
+def _evaluate(net, vocab, test_loader, criterion, epoch, step):
     # Get validation loss
     val_losses = []
     correct = 0
@@ -98,7 +100,8 @@ def _evaluate(net, vocab, test_loader, criterion):
         hotspot_labels = torch.from_numpy(indices_to_one_hot(labels, configurations.output_size))
         hotspot_labels = torch.tensor(hotspot_labels, dtype=torch.float)
         inputs = torch.from_numpy(vocab.encode(data["description"], configurations.seq_length))
-        inputs, hotspot_labels, images = inputs.to(configurations.DEVICE), hotspot_labels.to(configurations.DEVICE), images.to(configurations.DEVICE)
+        inputs, hotspot_labels, images = inputs.to(configurations.DEVICE), hotspot_labels.to(
+            configurations.DEVICE), images.to(configurations.DEVICE)
 
         output = net.forward(inputs, images)
         loss = criterion(output, hotspot_labels)
@@ -116,6 +119,7 @@ def _evaluate(net, vocab, test_loader, criterion):
 
     accuracy = 100 * correct / total
     net.train()
+    write_batch(model_name="cnn_rnn", epoch=epoch, batch=step, accuracy=accuracy.item(), loss=loss.item())
     print("Loss: {:.6f}...".format(loss.item()),
           "Val Loss: {:.6f}".format(np.mean(val_losses)),
           "Accuracy : {:.6f}".format(accuracy))
@@ -126,6 +130,15 @@ def train_and_evaluate():
     test_loader = get_t_loader()
     vocab = get_vocabulary()
     vocab_size = len(vocab.vocab) + 1  # +1 for the 0 padding
+    write_parameters("cnn_rnn", {"image_size": configurations.image_size,
+                                 "batch_size": configurations.batch_size,
+                                 "training_size": configurations.training_size,
+                                 "eval_size": configurations.eval_size,
+                                 "epochs": configurations.epochs,
+                                 "output_size": configurations.output_size,
+                                 "hidden_dim": hidden_dim,
+                                 "embedding_dim": embedding_dim,
+                                 "vocab_size": vocab_size})
     net = CnnRnnModel(vocab_size, embedding_dim, hidden_dim, configurations.output_size)
     net = net.to(configurations.DEVICE)
     criterion = nn.BCELoss()
@@ -136,7 +149,7 @@ def train_and_evaluate():
         if step % print_every == 0:
             print("Epoch: {}/{}...".format(epoch + 1, configurations.epochs),
                   "Step: {}...".format(step))
-            _evaluate(net, vocab, test_loader, criterion)
+            _evaluate(net, vocab, test_loader, criterion, epoch, step)
 
     return net
 

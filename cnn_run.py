@@ -7,6 +7,7 @@ from torch.utils.data.dataloader import DataLoader
 
 import configurations
 from cnn_model import CnnModel
+from log_writer import write_parameters, write_batch
 from t4sa_dataset import T4saDataset
 
 # Hyperparameters
@@ -60,7 +61,7 @@ def _train(net, train_loader, criterion, optimizer, epochs):
             yield (e, step)
 
 
-def _evaluate(net, test_loader, criterion):
+def _evaluate(net, test_loader, criterion, epoch, step):
     # Get validation loss
     val_losses = []
     correct = 0
@@ -88,6 +89,7 @@ def _evaluate(net, test_loader, criterion):
 
     accuracy = 100 * correct / total
     net.train()
+    write_batch(model_name="cnn", epoch=epoch, batch=step, accuracy=accuracy.item(), loss=loss.item())
     print("Loss: {:.6f}...".format(loss.item()),
           "Val Loss: {:.6f}".format(np.mean(val_losses)),
           "Accuracy : {:.6f}".format(accuracy))
@@ -105,7 +107,7 @@ def train_and_evaluate():
         if step % print_every == 0:
             print("Epoch: {}/{}...".format(epoch + 1, configurations.epochs),
                   "Step: {}...".format(step))
-            _evaluate(net, test_loader, criterion)
+            _evaluate(net, test_loader, criterion, epoch, step)
 
     return net
 
@@ -119,4 +121,10 @@ def get_model():
     return model
 
 
+write_parameters("cnn", {"image_size": configurations.image_size,
+                         "batch_size": configurations.batch_size,
+                         "training_size": configurations.training_size,
+                         "eval_size": configurations.eval_size,
+                         "epochs": configurations.epochs})
 get_model()
+

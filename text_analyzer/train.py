@@ -1,6 +1,8 @@
 import os
 import sys
 
+from log_writer import write_parameters, write_batch
+
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 import numpy as np
 import pickle
@@ -80,7 +82,7 @@ def _train(net, vocab, train_loader, criterion, optimizer, epochs):
             yield (e, step)
 
 
-def _evaluate(net, vocab, test_loader, criterion):
+def _evaluate(net, vocab, test_loader, criterion, epoch, step):
     # Get validation loss
     val_losses = []
     correct = 0
@@ -110,6 +112,7 @@ def _evaluate(net, vocab, test_loader, criterion):
 
     accuracy = 100 * correct / total
     net.train()
+    write_batch(model_name="rnn", epoch=epoch, batch=step, accuracy=accuracy.item(), loss=loss.item())
     print("Loss: {:.6f}...".format(loss.item()),
           "Val Loss: {:.6f}".format(np.mean(val_losses)),
           "Accuracy : {:.6f}".format(accuracy)
@@ -125,6 +128,16 @@ def train_and_evaluate():
     test_loader = get_test_loader()
     vocab = get_vocabulary()
     vocab_size = len(vocab.vocab) + 1  # +1 for the 0 padding
+    write_parameters("rnn", {"image_size": configurations.image_size,
+                                 "batch_size": configurations.batch_size,
+                                 "training_size": configurations.training_size,
+                                 "eval_size": configurations.eval_size,
+                                 "epochs": configurations.epochs,
+                                 "output_size": configurations.output_size,
+                                 "hidden_dim": hidden_dim,
+                                 "embedding_dim": configurations.embedding_dim,
+                                 "vocab_size": vocab_size,
+                                 "layer_dim": layer_dim})
     net = LSTMModel(vocab_size, configurations.embedding_dim, hidden_dim, layer_dim, configurations.output_size).to(configurations.DEVICE)
     criterion = nn.BCELoss()
     optimizer = torch.optim.Adam(net.parameters(), lr=lr)
@@ -135,7 +148,7 @@ def train_and_evaluate():
         if step % print_every == 0:
             print("Epoch: {}/{}...".format(epoch + 1, epochs),
                   "Step: {}...".format(step))
-            _evaluate(net, vocab, test_loader, criterion)
+            _evaluate(net, vocab, test_loader, criterion, epoch, step)
 
     return net
 

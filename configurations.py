@@ -19,5 +19,6 @@ epochs = 10
 clip = 5
 seq_length=150
 embedding_dim=150
+
 # Run parameters
 DEVICE = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
