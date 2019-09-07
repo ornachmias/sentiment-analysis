@@ -48,7 +48,7 @@ def _train(net, train_loader, criterion, optimizer, epochs):
             labels = data["classification"]
             images = data["image"].to(configurations.DEVICE)
             labels = torch.from_numpy(indices_to_one_hot(labels, configurations.output_size))
-            labels = torch.tensor(labels, dtype=torch.float, device=configurations.DEVICE)
+            labels = labels.type(torch.float).to(configurations.DEVICE)
 
             # zero accumulated gradients
             net.zero_grad()
@@ -70,7 +70,7 @@ def _evaluate(net, test_loader, criterion):
         labels = data["classification"]
         images = data["image"].to(configurations.DEVICE)
         hotspot_labels = torch.from_numpy(indices_to_one_hot(labels, configurations.output_size))
-        hotspot_labels = torch.tensor(hotspot_labels, dtype=torch.float, device=configurations.DEVICE)
+        hotspot_labels = hotspot_labels.type(torch.float).to(configurations.DEVICE)
 
         output = net.forward(images)
         loss = criterion(output, hotspot_labels)
@@ -80,6 +80,8 @@ def _evaluate(net, test_loader, criterion):
         _, predicted = torch.max(output.data, 1)
         # Total number of labels
         total += labels.size(0)
+
+        labels = labels.to(configurations.DEVICE)
 
         # Total correct predictions
         correct += (predicted == labels).sum()

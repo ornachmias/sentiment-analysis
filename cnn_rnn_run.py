@@ -13,7 +13,6 @@ from vocab import Vocab
 
 # Hyperparameters
 embedding_dim = 150
-seq_length = 150
 hidden_dim = 128
 layer_dim = 2
 lr = 0.001
@@ -72,7 +71,7 @@ def _train(net, vocab, train_loader, criterion, optimizer, epochs):
             images = data["image"]
             labels = torch.from_numpy(indices_to_one_hot(labels, configurations.output_size))
             labels = torch.tensor(labels, dtype=torch.float)
-            inputs = torch.from_numpy(vocab.encode(data["description"], seq_length))
+            inputs = torch.from_numpy(vocab.encode(data["description"], configurations.seq_length))
             inputs, labels, images = inputs.to(configurations.DEVICE), labels.to(configurations.DEVICE), images.to(configurations.DEVICE)
 
             # zero accumulated gradients
@@ -98,7 +97,7 @@ def _evaluate(net, vocab, test_loader, criterion):
         images = data["image"]
         hotspot_labels = torch.from_numpy(indices_to_one_hot(labels, configurations.output_size))
         hotspot_labels = torch.tensor(hotspot_labels, dtype=torch.float)
-        inputs = torch.from_numpy(vocab.encode(data["description"], seq_length))
+        inputs = torch.from_numpy(vocab.encode(data["description"], configurations.seq_length))
         inputs, hotspot_labels, images = inputs.to(configurations.DEVICE), hotspot_labels.to(configurations.DEVICE), images.to(configurations.DEVICE)
 
         output = net.forward(inputs, images)
