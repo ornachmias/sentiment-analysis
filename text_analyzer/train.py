@@ -116,8 +116,7 @@ def _evaluate(net, vocab, test_loader, criterion, epoch, step):
     write_batch(model_name="rnn", epoch=epoch, batch=step, accuracy=accuracy.item(), loss=loss.item())
     print("Loss: {:.6f}...".format(loss.item()),
           "Val Loss: {:.6f}".format(np.mean(val_losses)),
-          "Accuracy : {:.6f}".format(accuracy)
-          )
+          "Accuracy : {:.6f}".format(accuracy))
 
 
 def train_and_evaluate():
@@ -154,6 +153,42 @@ def train_and_evaluate():
     return net
 
 
+def run_t(net):
+    criterion = nn.BCELoss()
+    vocab = get_vocabulary()
+    test_loader = get_test_loader()
+    val_losses = []
+    correct = 0
+    total = 0
+    net.eval()
+    for data in test_loader:
+        inputs, labels = data["description"], data["classification"]
+        hotspot_labels = torch.from_numpy(indices_to_one_hot(labels, configurations.output_size))
+        hotspot_labels = torch.tensor(hotspot_labels, dtype=torch.float)
+        inputs = torch.from_numpy(vocab.encode(data["description"], configurations.seq_length))
+        inputs, hotspot_labels = inputs.to(configurations.DEVICE), hotspot_labels.to(configurations.DEVICE)
+
+        output = net.forward(inputs)
+        loss = criterion(output, hotspot_labels)
+        val_loss = criterion(output, hotspot_labels)
+        val_losses.append(val_loss.item())
+
+        _, predicted = torch.max(output.data, 1)
+
+        # Total number of labels
+        total += labels.size(0)
+
+        labels = labels.to(configurations.DEVICE)
+
+        # Total correct predictions
+        correct += (predicted == labels).sum()
+
+        accuracy = 100 * correct / total
+        print("Loss: {:.6f}...".format(loss.item()),
+              "Val Loss: {:.6f}".format(np.mean(val_losses)),
+              "Accuracy : {:.6f}".format(accuracy))
+
+
 def get_model():
     path = os.path.join(os.path.dirname(__file__), "trained_sentence_sentiment_model")
     if os.path.exists(path):
@@ -163,4 +198,6 @@ def get_model():
     return model
 
 
-train_and_evaluate()
+net = train_and_evaluate()
+run_t(net)
+
