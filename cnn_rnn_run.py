@@ -154,8 +154,47 @@ def train_and_evaluate():
     return net
 
 
+def run_t(net):
+    test_loader = get_t_loader()
+    vocab = get_vocabulary()
+    net = net.to(configurations.DEVICE)
+    criterion = nn.BCELoss()
+    val_losses = []
+    correct = 0
+    total = 0
+    net.eval()
+    for data in test_loader:
+        inputs, labels = data["description"], data["classification"]
+        images = data["image"]
+        hotspot_labels = torch.from_numpy(indices_to_one_hot(labels, configurations.output_size))
+        hotspot_labels = torch.tensor(hotspot_labels, dtype=torch.float)
+        inputs = torch.from_numpy(vocab.encode(data["description"], configurations.seq_length))
+        inputs, hotspot_labels, images = inputs.to(configurations.DEVICE), hotspot_labels.to(
+            configurations.DEVICE), images.to(configurations.DEVICE)
+
+        output = net.forward(inputs, images)
+        loss = criterion(output, hotspot_labels)
+        val_loss = criterion(output, hotspot_labels)
+        val_losses.append(val_loss.item())
+
+        _, predicted = torch.max(output.data, 1)
+        # Total number of labels
+        total += labels.size(0)
+
+        # Total correct predictions
+        labels = labels.to(configurations.DEVICE)
+
+        correct += (predicted == labels).sum()
+
+    accuracy = 100 * correct / total
+    net.train()
+    print("Loss: {:.6f}...".format(loss.item()),
+          "Val Loss: {:.6f}".format(np.mean(val_losses)),
+          "Accuracy : {:.6f}".format(accuracy))
+
+
 def get_model():
-    path = os.path.join(os.path.dirname(__file__), "trained_sentence_sentiment_model")
+    path = os.path.join(os.path.dirname(__file__), "trained_sentence_sentiment_model_cnn_rnn")
     if os.path.exists(path):
         return torch.load(path)
     model = train_and_evaluate()
@@ -163,4 +202,5 @@ def get_model():
     return model
 
 
-get_model()
+net = get_model()
+run_t(net)

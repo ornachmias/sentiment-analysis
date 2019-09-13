@@ -95,6 +95,42 @@ def _evaluate(net, test_loader, criterion, epoch, step):
           "Accuracy : {:.6f}".format(accuracy))
 
 
+def run_t(net):
+    test_loader = get_t_loader()
+    net = net.to(configurations.DEVICE)
+    criterion = nn.BCELoss()
+    # Get validation loss
+    val_losses = []
+    correct = 0
+    total = 0
+    net.eval()
+    for data in test_loader:
+        labels = data["classification"]
+        images = data["image"].to(configurations.DEVICE)
+        hotspot_labels = torch.from_numpy(indices_to_one_hot(labels, configurations.output_size))
+        hotspot_labels = hotspot_labels.type(torch.float).to(configurations.DEVICE)
+
+        output = net.forward(images)
+        loss = criterion(output, hotspot_labels)
+        val_loss = criterion(output, hotspot_labels)
+        val_losses.append(val_loss.item())
+
+        _, predicted = torch.max(output.data, 1)
+        # Total number of labels
+        total += labels.size(0)
+
+        labels = labels.to(configurations.DEVICE)
+
+        # Total correct predictions
+        correct += (predicted == labels).sum()
+
+    accuracy = 100 * correct / total
+    net.train()
+    print("Loss: {:.6f}...".format(loss.item()),
+          "Val Loss: {:.6f}".format(np.mean(val_losses)),
+          "Accuracy : {:.6f}".format(accuracy))
+
+
 def train_and_evaluate():
     train_loader = get_train_loader()
     test_loader = get_t_loader()
@@ -121,10 +157,9 @@ def get_model():
     return model
 
 
-write_parameters("cnn", {"image_size": configurations.image_size,
-                         "batch_size": configurations.batch_size,
-                         "training_size": configurations.training_size,
-                         "eval_size": configurations.eval_size,
-                         "epochs": configurations.epochs})
-get_model()
+net = get_model()
+run_t(net)
+
+
+
 
