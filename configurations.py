@@ -11,14 +11,14 @@ descriptions_file = os.path.join(data_path, "raw_tweets_text.csv")
 
 # Training and network parameters
 image_size = 224
-batch_size = 50
-training_size = 1000 # Change to None if we want to run on all training
-eval_size = 100 # Change to None if we want to run on all training
+batch_size = 25
+training_size = 50000  # Change to None if we want to run on all training
+eval_size = 1000  # Change to None if we want to run on all training
 output_size = 2
-epochs = 10
+epochs = 5
 clip = 5
-seq_length=150
-embedding_dim=150
+seq_length = 150
+embedding_dim = 150
 
 # Run parameters
 DEVICE = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
