@@ -198,6 +198,5 @@ def get_model():
     return model
 
 
-net = train_and_evaluate()
+net = get_model()
 run_t(net)
-
