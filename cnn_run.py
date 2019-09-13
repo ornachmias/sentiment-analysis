@@ -124,11 +124,11 @@ def run_t(net):
         # Total correct predictions
         correct += (predicted == labels).sum()
 
-    accuracy = 100 * correct / total
-    net.train()
-    print("Loss: {:.6f}...".format(loss.item()),
-          "Val Loss: {:.6f}".format(np.mean(val_losses)),
-          "Accuracy : {:.6f}".format(accuracy))
+        accuracy = 100 * correct / total
+
+        print("Loss: {:.6f}...".format(loss.item()),
+              "Val Loss: {:.6f}".format(np.mean(val_losses)),
+              "Accuracy : {:.6f}".format(accuracy))
 
 
 def train_and_evaluate():
@@ -159,7 +159,3 @@ def get_model():
 
 net = get_model()
 run_t(net)
-
-
-
-
